@@ -1,0 +1,7 @@
+{
+  "name": "DND 5e Spells",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}
