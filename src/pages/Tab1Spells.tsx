@@ -14,9 +14,8 @@ import {
   IonCardTitle,
   IonCardContent,
   IonSpinner,
-  IonSearchbar,
 } from "@ionic/react";
-import "./Tab2.css";
+import "./Tab1.css";
 import { Spell, SpellDetail } from "../services/spellsApi";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -24,22 +23,23 @@ import SpellCard from "../components/spellCard";
 
 const API_URL = "https://www.dnd5eapi.co/api/spells";
 
-const Tab1: React.FC = () => {
+const Tab1Spells: React.FC = () => {
   const [spells, setSpells] = useState([]);
+  const [filteredSpells, setFilteredSpells] = useState([]);
   const [loading, setLoading] = useState(true);
   const [spellDetails, setSpellDetails] = useState<SpellDetail | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [result, setResult] = useState([]);
-  const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
     const fetchSpells = async () => {
       try {
         const response = await axios.get(API_URL);
         setSpells(response.data.results);
-        setResult(response.data.results);
+        setFilteredSpells(
+          response.data.results.filter((spell: Spell) => spell.level === 0)
+        );
       } catch (error) {
-        console.error("Error fetching spells:", error);
+        console.error("Chyba při načítání kouzel:", error);
       } finally {
         setLoading(false);
       }
@@ -47,6 +47,11 @@ const Tab1: React.FC = () => {
 
     fetchSpells();
   }, []);
+
+  // Funkce pro změnu levelu
+  const changeLevel = (level: number) => {
+    setFilteredSpells(spells.filter((spell: Spell) => spell.level === level));
+  };
 
   const fetchSpellDetails = async (url: string) => {
     try {
@@ -67,38 +72,27 @@ const Tab1: React.FC = () => {
     setSpellDetails(null);
   };
 
-  useEffect(() => {
-    if (spells.length > 0) {
-      if (searchText.trim() === "") {
-        setResult(spells);
-      } else {
-        const filtered = spells.filter((spell: any) =>
-          spell.name.toLowerCase().includes(searchText.toLowerCase())
-        );
-        setResult(filtered);
-      }
-    }
-  }, [searchText, spells]);
-
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Spells</IonTitle>
+          <IonTitle>D&D Kouzla</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent>
-        <IonSearchbar
-          debounce={250}
-          placeholder="Search spell"
-          value={searchText}
-          onIonInput={(e: any) => setSearchText(e.target.value)}
-        ></IonSearchbar>
+        <IonButtons id="spell-buttons">
+          {[...Array(10)].map((_, level) => (
+            <IonButton key={level} onClick={() => changeLevel(level)}>
+              Level {level}
+            </IonButton>
+          ))}
+        </IonButtons>
+
         {loading ? (
-          <p>Loading spells...</p>
+          <p>Načítám kouzla...</p>
         ) : (
           <IonList>
-            {result.map((spell: Spell) => (
+            {filteredSpells.map((spell: Spell) => (
               <IonItem
                 key={spell.index}
                 onClick={() => handleSpellClick(spell.url)}
@@ -108,6 +102,7 @@ const Tab1: React.FC = () => {
             ))}
           </IonList>
         )}
+
         <IonModal
           isOpen={modalOpen}
           onDidDismiss={closeModal}
@@ -194,4 +189,4 @@ const Tab1: React.FC = () => {
   );
 };
 
-export default Tab1;
+export default Tab1Spells;

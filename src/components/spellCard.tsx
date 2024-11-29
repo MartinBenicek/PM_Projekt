@@ -1,4 +1,4 @@
-import { School } from "../services/spellsApi";
+import { School, Class } from "../services/spellsApi";
 
 const SpellCard = ({
   title,

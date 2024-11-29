@@ -1,0 +1,14 @@
+#custom-modal {
+  --width: 85%;
+  --max-height: 80%;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#custom-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
