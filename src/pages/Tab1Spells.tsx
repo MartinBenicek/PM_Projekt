@@ -14,14 +14,21 @@ import {
   IonCardTitle,
   IonCardContent,
   IonSpinner,
+  IonLabel,
+  IonTabBar,
+  IonTabButton,
+  IonBackButton,
+  IonIcon,
 } from "@ionic/react";
 import "./Tab1.css";
 import { Spell, SpellDetail } from "../services/spellsApi";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import SpellCard from "../components/spellCard";
-
-const API_URL = "https://www.dnd5eapi.co/api/spells";
+import { useParams } from "react-router-dom";
+import characterSvg from "../svg/character.svg";
+import scrollSvg from "../svg/scroll.svg";
+import useStorage from "../services/storage";
 
 const Tab1Spells: React.FC = () => {
   const [spells, setSpells] = useState([]);
@@ -29,26 +36,41 @@ const Tab1Spells: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [spellDetails, setSpellDetails] = useState<SpellDetail | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const { id } = useParams<{ id: string }>();
+  const { charactersStored, setCharactersStored, store } = useStorage();
+
+  const findCharacter = (id: string) => {
+    return charactersStored.find((character) => character.id === id);
+  };
+
+  const getCharacter = findCharacter(id);
 
   useEffect(() => {
-    const fetchSpells = async () => {
-      try {
-        const response = await axios.get(API_URL);
-        setSpells(response.data.results);
-        setFilteredSpells(
-          response.data.results.filter((spell: Spell) => spell.level === 0)
-        );
-      } catch (error) {
-        console.error("Chyba při načítání kouzel:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (getCharacter?.cls) {
+      const API_URL = `https://www.dnd5eapi.co/api/classes/${getCharacter.cls.toLowerCase()}/spells`;
+      const fetchSpells = async () => {
+        try {
+          const response = await axios.get(API_URL);
+          setSpells(response.data.results);
+          setFilteredSpells(response.data.results);
+        } catch (error) {
+          console.error("Error fetching spells:", error);
+        } finally {
+          changeLevel(0);
+          setLoading(false);
+        }
+      };
 
-    fetchSpells();
-  }, []);
+      fetchSpells();
+    }
+  }, [getCharacter?.cls]);
 
-  // Funkce pro změnu levelu
+  useEffect(() => {
+    if (spells.length > 0) {
+      changeLevel(0);
+    }
+  }, [spells]);
+
   const changeLevel = (level: number) => {
     setFilteredSpells(spells.filter((spell: Spell) => spell.level === level));
   };
@@ -72,11 +94,30 @@ const Tab1Spells: React.FC = () => {
     setSpellDetails(null);
   };
 
+  const addSpell = (newSpell: Spell) => {
+    if (getCharacter) {
+      const updatedCharacter = {
+        ...getCharacter,
+        spells: [...getCharacter.spells, newSpell],
+      };
+      const updatedCharacters = charactersStored.map((char) =>
+        char.id === updatedCharacter.id ? updatedCharacter : char
+      );
+
+      setCharactersStored(updatedCharacters);
+      store?.set("my-characters", updatedCharacters);
+      closeModal();
+    }
+  };
+
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>D&D Kouzla</IonTitle>
+          <IonButtons slot="start">
+            <IonBackButton defaultHref="/tab1" />
+          </IonButtons>
+          <IonTitle>Spells</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent>
@@ -89,7 +130,7 @@ const Tab1Spells: React.FC = () => {
         </IonButtons>
 
         {loading ? (
-          <p>Načítám kouzla...</p>
+          <p>Loading spells...</p>
         ) : (
           <IonList>
             {filteredSpells.map((spell: Spell) => (
@@ -109,7 +150,7 @@ const Tab1Spells: React.FC = () => {
           id="custom-modal"
         >
           <IonContent id="custom-content">
-            <IonCard>
+            <IonCard className="flex flex-col pb-3 px-2">
               <IonCardHeader>
                 <IonCardTitle>
                   {spellDetails ? spellDetails.name : "Loading..."}
@@ -181,10 +222,34 @@ const Tab1Spells: React.FC = () => {
                   <IonSpinner />
                 )}
               </IonCardContent>
+              {spellDetails && (
+                <IonButton
+                  onClick={() =>
+                    addSpell({
+                      index: spellDetails.index,
+                      name: spellDetails.name,
+                      level: spellDetails.level,
+                      url: spellDetails.url,
+                    })
+                  }
+                >
+                  Add spell
+                </IonButton>
+              )}
             </IonCard>
           </IonContent>
         </IonModal>
       </IonContent>
+      <IonTabBar slot="bottom">
+        <IonTabButton tab="tab1Character" href={`/tab1/character/${id}`}>
+          <IonIcon aria-hidden="true" icon={characterSvg} />
+          <IonLabel>Character</IonLabel>
+        </IonTabButton>
+        <IonTabButton tab="tab1Spells" href={`/tab1/spells/${id}`}>
+          <IonIcon aria-hidden="true" icon={scrollSvg} />
+          <IonLabel>Spells</IonLabel>
+        </IonTabButton>
+      </IonTabBar>
     </IonPage>
   );
 };

@@ -1,4 +1,4 @@
-import { Redirect, Route } from "react-router-dom";
+import { Redirect, Route, useLocation } from "react-router-dom";
 import {
   IonApp,
   IonIcon,
@@ -10,7 +10,9 @@ import {
   setupIonicReact,
 } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
-import { ellipse, square, triangle } from "ionicons/icons";
+import { square } from "ionicons/icons";
+import charactersSvg from "./svg/characters.svg";
+import scrollSvg from "./svg/scroll.svg";
 import Tab1 from "./pages/Tab1";
 import Tab2 from "./pages/Tab2";
 import Tab3 from "./pages/Tab3";
@@ -44,44 +46,63 @@ import "@ionic/react/css/palettes/dark.system.css";
 
 /* Theme variables */
 import "./theme/variables.css";
+import Tab1Spells from "./pages/Tab1Spells";
+import Tab1Character from "./pages/Tab1Character";
 
 setupIonicReact();
 
-const App: React.FC = () => (
-  <IonApp>
-    <IonReactRouter>
-      <IonTabs>
-        <IonRouterOutlet>
-          <Route exact path="/tab1">
-            <Tab1 />
-          </Route>
-          <Route exact path="/tab2">
-            <Tab2 />
-          </Route>
-          <Route path="/tab3">
-            <Tab3 />
-          </Route>
-          <Route exact path="/">
-            <Redirect to="/tab1" />
-          </Route>
-        </IonRouterOutlet>
-        <IonTabBar slot="bottom">
-          <IonTabButton tab="tab1" href="/tab1">
-            <IonIcon aria-hidden="true" icon={triangle} />
-            <IonLabel>Tab 1</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="tab2" href="/tab2">
-            <IonIcon aria-hidden="true" icon={ellipse} />
-            <IonLabel>Spells</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="tab3" href="/tab3">
-            <IonIcon aria-hidden="true" icon={square} />
-            <IonLabel>Tab 3</IonLabel>
-          </IonTabButton>
-        </IonTabBar>
-      </IonTabs>
-    </IonReactRouter>
-  </IonApp>
-);
+const App: React.FC = () => {
+  return (
+    <IonApp>
+      <IonReactRouter>
+        <Main />
+      </IonReactRouter>
+    </IonApp>
+  );
+};
+
+const Main: React.FC = () => {
+  const location = useLocation(); // This is now inside IonReactRouter
+  return (
+    <IonTabs>
+      <IonRouterOutlet animated={false}>
+        {/* Main tabs */}
+        <Route exact path="/tab1" component={Tab1} />
+        <Route exact path="/tab2" component={Tab2} />
+        <Route exact path="/tab3" component={Tab3} />
+
+        {/* Sub-tabs under Tab1 */}
+        <Route exact path="/tab1/character/:id" component={Tab1Character} />
+        <Route exact path="/tab1/spells/:id" component={Tab1Spells} />
+
+        <Route exact path="/">
+          <Redirect to="/tab1" />
+        </Route>
+      </IonRouterOutlet>
+
+      {/* Main Tab Bar */}
+      <IonTabBar
+        slot="bottom"
+        hidden={
+          location.pathname.startsWith("/tab1/character") ||
+          location.pathname.startsWith("/tab1/spells")
+        }
+      >
+        <IonTabButton tab="tab1" href="/tab1">
+          <IonIcon aria-hidden="true" icon={charactersSvg} />
+          <IonLabel>Tab 1</IonLabel>
+        </IonTabButton>
+        <IonTabButton tab="tab2" href="/tab2">
+          <IonIcon aria-hidden="true" icon={scrollSvg} />
+          <IonLabel>Tab 2</IonLabel>
+        </IonTabButton>
+        <IonTabButton tab="tab3" href="/tab3">
+          <IonIcon aria-hidden="true" icon={square} />
+          <IonLabel>Tab 3</IonLabel>
+        </IonTabButton>
+      </IonTabBar>
+    </IonTabs>
+  );
+};
 
 export default App;
