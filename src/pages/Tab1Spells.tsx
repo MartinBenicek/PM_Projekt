@@ -19,6 +19,7 @@ import {
   IonTabButton,
   IonBackButton,
   IonIcon,
+  IonAlert,
 } from "@ionic/react";
 import "./Tab1.css";
 import { Spell, SpellDetail } from "../services/spellsApi";
@@ -28,7 +29,7 @@ import SpellCard from "../components/spellCard";
 import { useParams } from "react-router-dom";
 import characterSvg from "../svg/character.svg";
 import scrollSvg from "../svg/scroll.svg";
-import useStorage from "../services/storage";
+import useStorage, { createCharacter } from "../services/storage";
 
 const Tab1Spells: React.FC = () => {
   const [spells, setSpells] = useState([]);
@@ -38,12 +39,33 @@ const Tab1Spells: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const { id } = useParams<{ id: string }>();
   const { charactersStored, setCharactersStored, store } = useStorage();
+  const [alert, setAlert] = useState(false);
 
   const findCharacter = (id: string) => {
     return charactersStored.find((character) => character.id === id);
   };
 
-  const getCharacter = findCharacter(id);
+  const [getCharacter, setGetCharacter] = useState<createCharacter | undefined>(
+    findCharacter(id)
+  );
+
+  useEffect(() => {
+    if (charactersStored.length > 0) {
+      const character = findCharacter(id);
+      setGetCharacter(character);
+    }
+  }, [charactersStored, id]);
+
+  useEffect(() => {
+    if (store) {
+      getUpdatedStorage();
+    }
+  }, [store, charactersStored]);
+
+  const getUpdatedStorage = async () => {
+    const storage = await store?.get("my-characters");
+    setCharactersStored(storage);
+  };
 
   useEffect(() => {
     if (getCharacter?.cls) {
@@ -96,6 +118,15 @@ const Tab1Spells: React.FC = () => {
 
   const addSpell = (newSpell: Spell) => {
     if (getCharacter) {
+      const alreadyAdded = getCharacter.spells.some(
+        (spell: Spell) => spell.index === newSpell.index
+      );
+
+      if (alreadyAdded) {
+        setAlert(true);
+        return;
+      }
+
       const updatedCharacter = {
         ...getCharacter,
         spells: [...getCharacter.spells, newSpell],
@@ -236,6 +267,21 @@ const Tab1Spells: React.FC = () => {
                   Add spell
                 </IonButton>
               )}
+              <IonAlert
+                isOpen={alert}
+                header="Spell Known"
+                message={`You already have ${spellDetails?.name}`}
+                buttons={[
+                  {
+                    text: "Ok",
+                    role: "cancel",
+                    handler: () => {
+                      closeModal();
+                      setAlert(false);
+                    },
+                  },
+                ]}
+              ></IonAlert>
             </IonCard>
           </IonContent>
         </IonModal>

@@ -15,7 +15,7 @@ import {
   IonCardContent,
   IonList,
   IonItem,
-  useIonViewWillEnter,
+  useIonViewDidEnter,
 } from "@ionic/react";
 import { useParams } from "react-router-dom";
 import characterSvg from "../svg/character.svg";
@@ -25,6 +25,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Spell, SpellTable } from "../services/spellsApi";
 import InputButton from "../components/inputButton";
+import { trash } from "ionicons/icons";
 
 const Tab1Character = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,14 +35,20 @@ const Tab1Character = () => {
     { key: string; value: number }[]
   >([]);
   const [isCharacterReady, setIsCharacterReady] = useState(false);
+  const [getCharacter, setGetCharacter] = useState<createCharacter | undefined>(
+    undefined
+  );
+  const [wait, setWait] = useState(false);
 
   const findCharacter = (id: string) => {
     return charactersStored.find((character) => character.id === id);
   };
 
-  const [getCharacter, setGetCharacter] = useState<createCharacter | undefined>(
-    findCharacter(id)
-  );
+  const getUpdatedStorage = async () => {
+    const storage = await store?.get("my-characters");
+    setCharactersStored(storage);
+    setWait(true);
+  };
 
   useEffect(() => {
     if (charactersStored.length > 0) {
@@ -51,16 +58,15 @@ const Tab1Character = () => {
     }
   }, [charactersStored, id]);
 
-  const getUpdatedStorage = async () => {
-    const storage = await store?.get("my-characters");
-    setCharactersStored(storage);
-  };
-
   useEffect(() => {
-    if (store) {
+    if (store && !wait) {
       getUpdatedStorage();
     }
-  }, [store, charactersStored]);
+  }, [charactersStored, wait]);
+
+  useIonViewDidEnter(() => {
+    setWait(false);
+  });
 
   useEffect(() => {
     if (isCharacterReady && getCharacter?.cls) {
@@ -75,7 +81,7 @@ const Tab1Character = () => {
       };
       fetchSpellTable();
     }
-  }, [isCharacterReady, getCharacter?.cls]);
+  }, [getCharacter?.cls]);
 
   useEffect(() => {
     fillSpellSlots();
@@ -113,6 +119,26 @@ const Tab1Character = () => {
         2
     );
   }
+
+  const deleteSpell = async (id: string) => {
+    if (getCharacter) {
+      const filterSpells = getCharacter.spells.filter(
+        (spell) => spell.index !== id
+      );
+
+      const updatedCharacter = {
+        ...getCharacter,
+        spells: filterSpells,
+      };
+
+      const updatedCharacters = charactersStored.map((character) =>
+        character.id === updatedCharacter.id ? updatedCharacter : character
+      );
+
+      setCharactersStored(updatedCharacters);
+      await store?.set("my-characters", updatedCharacters);
+    }
+  };
 
   return (
     <IonPage>
@@ -237,7 +263,17 @@ const Tab1Character = () => {
             <IonCard className="p-4">
               <IonCardTitle className="p-2 text-center">Spells</IonCardTitle>
               {getCharacter.spells.map((spell: Spell) => (
-                <IonItem key={spell.index}>{spell.name}</IonItem>
+                <div className="flex justify-between items-center">
+                  <IonItem key={spell.index} className="flex-grow">
+                    {spell.name}
+                  </IonItem>
+                  <IonIcon
+                    icon={trash}
+                    size="large"
+                    className="text-red-500"
+                    onClick={async () => await deleteSpell(spell.index)}
+                  ></IonIcon>
+                </div>
               ))}
             </IonCard>
           </>
