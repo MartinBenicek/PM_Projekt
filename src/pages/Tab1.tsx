@@ -117,6 +117,8 @@ const Tab1: React.FC = () => {
       wis: 10,
       cha: 10,
       spellcastingAbility: spellcastingAbility,
+      spellsMax: 0,
+      cantripsMax: 0,
     };
 
     const updatedCharacters = [...charactersStored, characterData];
@@ -290,7 +292,6 @@ const Tab1: React.FC = () => {
             </div>
           </IonContent>
         </IonModal>
-        <IonButton onClick={() => store?.clear()}>delete all</IonButton>
       </IonContent>
     </IonPage>
   );

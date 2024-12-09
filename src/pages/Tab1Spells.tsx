@@ -20,6 +20,7 @@ import {
   IonBackButton,
   IonIcon,
   IonAlert,
+  useIonViewDidEnter,
 } from "@ionic/react";
 import "./Tab1.css";
 import { Spell, SpellDetail } from "../services/spellsApi";
@@ -40,6 +41,9 @@ const Tab1Spells: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { charactersStored, setCharactersStored, store } = useStorage();
   const [alert, setAlert] = useState(false);
+  const [alertText, setAlertText] = useState("");
+  const [alertSubText, setAlertSubText] = useState("");
+  const [wait, setWait] = useState(false);
 
   const findCharacter = (id: string) => {
     return charactersStored.find((character) => character.id === id);
@@ -53,14 +57,19 @@ const Tab1Spells: React.FC = () => {
     if (charactersStored.length > 0) {
       const character = findCharacter(id);
       setGetCharacter(character);
+      setWait(true);
     }
   }, [charactersStored, id]);
 
   useEffect(() => {
-    if (store) {
+    if (store && !wait) {
       getUpdatedStorage();
     }
-  }, [store, charactersStored]);
+  }, [charactersStored, wait]);
+
+  useIonViewDidEnter(() => {
+    setWait(false);
+  });
 
   const getUpdatedStorage = async () => {
     const storage = await store?.get("my-characters");
@@ -118,11 +127,37 @@ const Tab1Spells: React.FC = () => {
 
   const addSpell = (newSpell: Spell) => {
     if (getCharacter) {
+      if (
+        newSpell.level === 0 &&
+        getCharacter.spells.filter((spell) => spell.level === 0).length >=
+          getCharacter.cantripsMax
+      ) {
+        setAlertText("Max Cantrips Reached");
+        setAlertSubText("You have reached your limit on known cantrips");
+        setAlert(true);
+        return;
+      }
+
+      if (
+        newSpell.level !== 0 &&
+        getCharacter.spells.filter((spell) => spell.level !== 0).length >=
+          getCharacter.spellsMax
+      ) {
+        setAlertText("Max Spells Reached");
+        setAlertSubText(
+          "You have reached your limit on known or prepared spells"
+        );
+        setAlert(true);
+        return;
+      }
+
       const alreadyAdded = getCharacter.spells.some(
         (spell: Spell) => spell.index === newSpell.index
       );
 
       if (alreadyAdded) {
+        setAlertText("Spell Known");
+        setAlertSubText("You already have ");
         setAlert(true);
         return;
       }
@@ -269,8 +304,12 @@ const Tab1Spells: React.FC = () => {
               )}
               <IonAlert
                 isOpen={alert}
-                header="Spell Known"
-                message={`You already have ${spellDetails?.name}`}
+                header={alertText}
+                message={
+                  alertSubText === "You already have "
+                    ? alertSubText + spellDetails?.name
+                    : alertSubText
+                }
                 buttons={[
                   {
                     text: "Ok",

@@ -16,6 +16,9 @@ import {
   IonList,
   IonItem,
   useIonViewDidEnter,
+  IonCardHeader,
+  IonModal,
+  IonSpinner,
 } from "@ionic/react";
 import { useParams } from "react-router-dom";
 import characterSvg from "../svg/character.svg";
@@ -23,9 +26,10 @@ import scrollSvg from "../svg/scroll.svg";
 import useStorage, { createCharacter } from "../services/storage";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Spell, SpellTable } from "../services/spellsApi";
+import { Spell, SpellDetail, SpellTable } from "../services/spellsApi";
 import InputButton from "../components/inputButton";
 import { trash } from "ionicons/icons";
+import SpellCard from "../components/spellCard";
 
 const Tab1Character = () => {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +43,8 @@ const Tab1Character = () => {
     undefined
   );
   const [wait, setWait] = useState(false);
+  const [spellDetails, setSpellDetails] = useState<SpellDetail | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const findCharacter = (id: string) => {
     return charactersStored.find((character) => character.id === id);
@@ -87,7 +93,7 @@ const Tab1Character = () => {
     fillSpellSlots();
   }, [spellTable, getCharacter?.level]);
 
-  const fillSpellSlots = () => {
+  const fillSpellSlots = async () => {
     const findSpellSlots = spellTable?.find(
       (level: SpellTable) => level.level === getCharacter?.level
     )?.spellcasting;
@@ -100,6 +106,25 @@ const Tab1Character = () => {
         })
       );
       setTotalSpellSlots(spellSlotsArray);
+
+      if (getCharacter) {
+        const updatedCharacter = {
+          ...getCharacter,
+          cantripsMax: spellSlotsArray.find(
+            (cantrip) => cantrip.key === "cantrips_known"
+          )?.value,
+          spellsMax: spellSlotsArray.find(
+            (spell) => spell.key === "spells_known"
+          )?.value,
+        };
+
+        const updatedCharacters = charactersStored.map((character) =>
+          character.id === updatedCharacter.id ? updatedCharacter : character
+        );
+
+        setCharactersStored(updatedCharacters);
+        await store?.set("my-characters", updatedCharacters);
+      }
     } else {
       setTotalSpellSlots([]);
     }
@@ -138,6 +163,25 @@ const Tab1Character = () => {
       setCharactersStored(updatedCharacters);
       await store?.set("my-characters", updatedCharacters);
     }
+  };
+
+  const fetchSpellDetails = async (url: string) => {
+    try {
+      const response = await axios.get(`https://www.dnd5eapi.co${url}`);
+      setSpellDetails(response.data);
+    } catch (error) {
+      console.error("Error fetching spell details:", error);
+    }
+  };
+
+  const handleSpellClick = (url: string) => {
+    fetchSpellDetails(url);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setSpellDetails(null);
   };
 
   return (
@@ -262,20 +306,110 @@ const Tab1Character = () => {
             </IonCard>
             <IonCard className="p-4">
               <IonCardTitle className="p-2 text-center">Spells</IonCardTitle>
-              {getCharacter.spells.map((spell: Spell) => (
-                <div className="flex justify-between items-center">
-                  <IonItem key={spell.index} className="flex-grow">
-                    {spell.name}
-                  </IonItem>
-                  <IonIcon
-                    icon={trash}
-                    size="large"
-                    className="text-red-500"
-                    onClick={async () => await deleteSpell(spell.index)}
-                  ></IonIcon>
-                </div>
-              ))}
+              {[...getCharacter.spells]
+                .sort((a: Spell, b: Spell) => a.level - b.level)
+                .map((spell: Spell) => (
+                  <div
+                    key={spell.index}
+                    className="flex justify-between items-center"
+                  >
+                    <IonItem
+                      className="flex-grow"
+                      onClick={() => handleSpellClick(spell.url)}
+                    >
+                      {spell.name},{" "}
+                      {spell.level === 0 ? "Cantrip" : "level - " + spell.level}
+                    </IonItem>
+                    <IonIcon
+                      icon={trash}
+                      size="large"
+                      className="text-red-500"
+                      onClick={async () => await deleteSpell(spell.index)}
+                    ></IonIcon>
+                  </div>
+                ))}
             </IonCard>
+            <IonModal
+              isOpen={modalOpen}
+              onDidDismiss={closeModal}
+              id="custom-modal"
+            >
+              <IonContent id="custom-content">
+                <IonCard>
+                  <IonCardHeader>
+                    <IonCardTitle>
+                      {spellDetails ? spellDetails.name : "Loading..."}
+                    </IonCardTitle>
+                  </IonCardHeader>
+                  <IonCardContent key={spellDetails?.index}>
+                    {spellDetails ? (
+                      <>
+                        <div className="info-section">
+                          <SpellCard
+                            title="Level"
+                            description={spellDetails.level}
+                          />
+                          <p>
+                            <strong>Casting Time:</strong>{" "}
+                            {spellDetails.casting_time}
+                            {spellDetails.ritual ? " (ritual)" : null}
+                          </p>
+                          <p>
+                            <strong>Range:</strong> {spellDetails.range}
+                            {spellDetails.area_of_effect
+                              ? ` (${spellDetails.area_of_effect.size} feet, ${spellDetails.area_of_effect.type})`
+                              : null}
+                          </p>
+                          <p>
+                            <strong>Components:</strong>{" "}
+                            {spellDetails.components.join(", ")}
+                            {spellDetails.components.includes("M")
+                              ? ` (${spellDetails.material})`
+                              : null}
+                          </p>
+                          <SpellCard
+                            title="Duration"
+                            description={spellDetails.duration}
+                          />
+                          <SpellCard
+                            title="School"
+                            description={spellDetails.school.name}
+                          />
+                          <SpellCard
+                            title="Classes"
+                            description={spellDetails.classes
+                              .map((cls) => cls.name)
+                              .join(", ")}
+                          />
+                          <SpellCard
+                            title="Attack/Save"
+                            description={
+                              spellDetails.dc?.dc_type?.name ||
+                              spellDetails.attack_type ||
+                              "None"
+                            }
+                          />
+                          {spellDetails.damage?.damage_type?.name && (
+                            <SpellCard
+                              title="Damage/Effect"
+                              description={spellDetails.damage.damage_type.name}
+                            />
+                          )}
+                        </div>
+                        <div className="description-section">
+                          <SpellCard
+                            title="Description"
+                            description={spellDetails.desc.join(" ")}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <IonSpinner />
+                    )}
+                  </IonCardContent>
+                </IonCard>
+              </IonContent>
+            </IonModal>
           </>
         )}
       </IonContent>

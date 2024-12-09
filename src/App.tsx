@@ -16,6 +16,8 @@ import scrollSvg from "./svg/scroll.svg";
 import Tab1 from "./pages/Tab1";
 import Tab2 from "./pages/Tab2";
 import Tab3 from "./pages/Tab3";
+import Tab1Spells from "./pages/Tab1Spells";
+import Tab1Character from "./pages/Tab1Character";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -40,18 +42,33 @@ import "@ionic/react/css/display.css";
  * https://ionicframework.com/docs/theming/dark-mode
  */
 
+import "./theme/variables.css";
 /* import '@ionic/react/css/palettes/dark.always.css'; */
-/* import '@ionic/react/css/palettes/dark.class.css'; */
-import "@ionic/react/css/palettes/dark.system.css";
+import "@ionic/react/css/palettes/dark.class.css";
+//import "@ionic/react/css/palettes/dark.system.css";
 
 /* Theme variables */
 import "./theme/variables.css";
-import Tab1Spells from "./pages/Tab1Spells";
-import Tab1Character from "./pages/Tab1Character";
-
+import useStorage from "./services/storage";
+import { useEffect } from "react";
 setupIonicReact();
 
 const App: React.FC = () => {
+  const { store } = useStorage();
+
+  const toggleDarkMode = (enabled: boolean) => {
+    document.documentElement.classList.toggle("ion-palette-dark", enabled);
+  };
+
+  const initializeDarkMode = async () => {
+    const darkMode = await store?.get("dark-mode");
+    toggleDarkMode(darkMode === true);
+  };
+
+  useEffect(() => {
+    initializeDarkMode();
+  }, [[], store]);
+
   return (
     <IonApp>
       <IonReactRouter>
