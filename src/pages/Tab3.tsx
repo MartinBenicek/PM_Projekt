@@ -12,10 +12,12 @@ import { useEffect, useState } from "react";
 
 const Tab3: React.FC = () => {
   const { store } = useStorage();
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
 
   const toggleDarkMode = (enabled: boolean) => {
-    document.documentElement.classList.toggle("ion-palette-dark", enabled);
+    setTimeout(() => {
+      document.documentElement.classList.toggle("ion-palette-dark", enabled);
+    }, 100);
     setDarkMode(enabled);
     store?.set("dark-mode", enabled);
   };

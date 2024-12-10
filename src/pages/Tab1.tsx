@@ -147,6 +147,14 @@ const Tab1: React.FC = () => {
     fetchStoredCharacters();
   }, [location]);
 
+  const handleInputChange = (e: CustomEvent) => {
+    const value = parseInt(e.detail.value || "10", 10);
+    if (!isNaN(value)) {
+      const result = Math.max(1, Math.min(20, value));
+      setLevel(result);
+    }
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -267,11 +275,11 @@ const Tab1: React.FC = () => {
                 >
                   -
                 </IonButton>
-                <input
+                <IonInput
                   type="number"
                   className="w-12 text-center"
                   value={level}
-                  onChange={(e) => e.target.value}
+                  onIonChange={handleInputChange}
                 />
                 <IonButton
                   strong={true}
