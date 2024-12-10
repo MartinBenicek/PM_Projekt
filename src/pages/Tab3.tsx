@@ -6,18 +6,34 @@ import {
   IonToolbar,
 } from "@ionic/react";
 import "./Tab3.css";
-import sun from "../svg/sun.svg";
-import moon from "../svg/moon.svg";
 import useStorage from "../services/storage";
-import { useEffect } from "react";
+import AnimatedToggle from "../components/animatedToggle";
+import { useEffect, useState } from "react";
 
 const Tab3: React.FC = () => {
   const { store } = useStorage();
+  const [darkMode, setDarkMode] = useState(false);
 
   const toggleDarkMode = (enabled: boolean) => {
     document.documentElement.classList.toggle("ion-palette-dark", enabled);
+    setDarkMode(enabled);
     store?.set("dark-mode", enabled);
   };
+
+  const initializeDarkMode = async () => {
+    const storedValue = await store?.get("dark-mode");
+    if (storedValue !== null && typeof storedValue === "boolean") {
+      setDarkMode(storedValue);
+      document.documentElement.classList.toggle(
+        "ion-palette-dark",
+        storedValue
+      );
+    }
+  };
+
+  useEffect(() => {
+    initializeDarkMode();
+  }, [store]);
 
   return (
     <IonPage>
@@ -27,19 +43,12 @@ const Tab3: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <div className="flex items-center h-full">
-          <img
-            className="w-1/2"
-            src={moon}
-            onClick={() => toggleDarkMode(true)}
-            alt="Enable Dark Mode"
-          />
-          <img
-            className="w-1/2"
-            src={sun}
-            onClick={() => toggleDarkMode(false)}
-            alt="Disable Dark Mode"
-          />
+        <div className="flex flex-col items-center h-full">
+          <h2 className="text-xl mb-4">Toggle Dark Mode</h2>
+          <AnimatedToggle
+            checked={darkMode}
+            onChange={toggleDarkMode}
+          ></AnimatedToggle>
         </div>
       </IonContent>
     </IonPage>

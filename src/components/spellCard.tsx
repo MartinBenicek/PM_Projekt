@@ -1,5 +1,3 @@
-import { School, Class } from "../services/spellsApi";
-
 const SpellCard = ({
   title,
   description,

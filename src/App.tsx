@@ -10,7 +10,7 @@ import {
   setupIonicReact,
 } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
-import { square } from "ionicons/icons";
+import { settingsOutline } from "ionicons/icons";
 import charactersSvg from "./svg/characters.svg";
 import scrollSvg from "./svg/scroll.svg";
 import Tab1 from "./pages/Tab1";
@@ -114,7 +114,7 @@ const Main: React.FC = () => {
           <IonLabel>Tab 2</IonLabel>
         </IonTabButton>
         <IonTabButton tab="tab3" href="/tab3">
-          <IonIcon aria-hidden="true" icon={square} />
+          <IonIcon aria-hidden="true" icon={settingsOutline} />
           <IonLabel>Tab 3</IonLabel>
         </IonTabButton>
       </IonTabBar>
